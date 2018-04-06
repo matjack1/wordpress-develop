@@ -723,6 +723,7 @@ function get_comment_link( $comment = null, $args = array() ) {
 		'per_page'  => '',
 		'max_depth' => '',
 		'cpage'     => null,
+		'include_unapproved' => '',
 	);
 	$args     = wp_parse_args( $args, $defaults );
 
@@ -744,6 +745,15 @@ function get_comment_link( $comment = null, $args = array() ) {
 		}
 
 		$cpage = $args['page'];
+
+		if ( is_user_logged_in() ) {
+			$args['include_unapproved'] = get_current_user_id();
+		} else {
+			$commenter = wp_get_current_commenter();
+			if ( $commenter['comment_author_email'] ) {
+				$args['include_unapproved'] = $commenter['comment_author_email'];
+			}
+		}
 
 		if ( '' == $cpage ) {
 			if ( ! empty( $in_comment_loop ) ) {
@@ -1311,7 +1321,6 @@ function wp_comment_form_unfiltered_html_nonce() {
  * @global int        $id
  * @global WP_Comment $comment
  * @global string     $user_login
- * @global int        $user_ID
  * @global string     $user_identity
  * @global bool       $overridden_cpage
  * @global bool       $withcomments
@@ -1321,7 +1330,7 @@ function wp_comment_form_unfiltered_html_nonce() {
  *                                  Default false.
  */
 function comments_template( $file = '/comments.php', $separate_comments = false ) {
-	global $wp_query, $withcomments, $post, $wpdb, $id, $comment, $user_login, $user_ID, $user_identity, $overridden_cpage;
+	global $wp_query, $withcomments, $post, $wpdb, $id, $comment, $user_login, $user_identity, $overridden_cpage;
 
 	if ( ! ( is_single() || is_page() || $withcomments ) || empty( $post ) ) {
 		return;
@@ -1332,28 +1341,6 @@ function comments_template( $file = '/comments.php', $separate_comments = false 
 	}
 
 	$req = get_option( 'require_name_email' );
-
-	/*
-	 * Comment author information fetched from the comment cookies.
-	 */
-	$commenter = wp_get_current_commenter();
-
-	/*
-	 * The name of the current comment author escaped for use in attributes.
-	 * Escaped by sanitize_comment_cookies().
-	 */
-	$comment_author = $commenter['comment_author'];
-
-	/*
-	 * The email address of the current comment author escaped for use in attributes.
-	 * Escaped by sanitize_comment_cookies().
-	 */
-	$comment_author_email = $commenter['comment_author_email'];
-
-	/*
-	 * The url of the current comment author escaped for use in attributes.
-	 */
-	$comment_author_url = esc_url( $commenter['comment_author_url'] );
 
 	$comment_args = array(
 		'orderby'                   => 'comment_date_gmt',
@@ -1370,8 +1357,8 @@ function comments_template( $file = '/comments.php', $separate_comments = false 
 		$comment_args['hierarchical'] = false;
 	}
 
-	if ( $user_ID ) {
-		$comment_args['include_unapproved'] = array( $user_ID );
+	if ( is_user_logged_in() ) {
+		$comment_args['include_unapproved'] = get_current_user_id();
 	} else {
 		$unapproved_email = wp_get_unapproved_comment_author_email();
 

@@ -1047,6 +1047,7 @@ function get_page_of_comment( $comment_ID, $args = array() ) {
 		'page'      => '',
 		'per_page'  => '',
 		'max_depth' => '',
+		'include_unapproved' => '',
 	);
 	$args          = wp_parse_args( $args, $defaults );
 	$original_args = $args;
@@ -1091,6 +1092,7 @@ function get_page_of_comment( $comment_ID, $args = array() ) {
 			'fields'     => 'ids',
 			'count'      => true,
 			'status'     => 'approve',
+			'include_unapproved' => $args['include_unapproved'],
 			'parent'     => 0,
 			'date_query' => array(
 				array(

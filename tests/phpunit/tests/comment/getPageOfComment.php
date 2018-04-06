@@ -437,4 +437,32 @@ class Tests_Comment_GetPageOfComment extends WP_UnitTestCase {
 
 		$this->assertEquals( 2, get_page_of_comment( $c3 ) );
 	}
+
+  /**
+   * @ticket 8973
+   */
+	public function test_page_number_when_user_has_unapproved_comments() {
+		$p = self::factory()->post->create();
+
+    // page 3
+		$comment_last = self::factory()->comment->create_post_comments( $p, 1, array( 'comment_author' => 'Test Commenter', 'comment_author_email' => 'example@example.com', 'comment_date' => '2013-09-20 00:00:00' ) );
+
+		// page 2
+		self::factory()->comment->create_post_comments( $p, 1, array( 'comment_author' => 'Test Commenter', 'comment_author_email' => 'example@example.com', 'comment_approved' => 0, 'comment_date' => '2013-09-19 00:00:00' ) );
+		self::factory()->comment->create_post_comments( $p, 1, array( 'comment_author' => 'Test Commenter', 'comment_author_email' => 'example@example.com', 'comment_approved' => 0, 'comment_date' => '2013-09-18 00:00:00' ) );
+		self::factory()->comment->create_post_comments( $p, 1, array( 'comment_author' => 'Test Commenter', 'comment_author_email' => 'example@example.com', 'comment_approved' => 0, 'comment_date' => '2013-09-17 00:00:00' ) );
+
+		// page 1
+		$unapproved = self::factory()->comment->create_post_comments( $p, 1, array( 'comment_author' => 'Test Commenter', 'comment_author_email' => 'example@example.com', 'comment_approved' => 0, 'comment_date' => '2013-09-16 00:00:00' ) );
+		self::factory()->comment->create_post_comments( $p, 1, array( 'comment_author' => 'Test Commenter', 'comment_author_email' => 'example@example.com', 'comment_date' => '2013-09-15 00:00:00' ) );
+		self::factory()->comment->create_post_comments( $p, 1, array( 'comment_author' => 'Test Commenter', 'comment_author_email' => 'example@example.com', 'comment_date' => '2013-09-14 00:00:00' ) );
+
+		$this->assertEquals( 1, get_page_of_comment( $comment_last[0],  array( 'per_page' => 3 ) ) );
+		$this->assertEquals( 3, get_page_of_comment( $comment_last[0],  array( 'per_page' => 3, 'include_unapproved' => 'example@example.com' ) ) );
+
+		self::factory()->comment->update_object( $unapproved[0], array( 'comment_approved' => 1 ));
+
+		$this->assertEquals( 2, get_page_of_comment( $comment_last[0],  array( 'per_page' => 3 ) ) );
+		$this->assertEquals( 3, get_page_of_comment( $comment_last[0],  array( 'per_page' => 3, 'include_unapproved' => 'example@example.com' ) ) );
+	}
 }
